@@ -1,0 +1,16 @@
+# k6 raw result files (can be large JSON/CSV exports)
+k6/results/
+
+# Node (if helpers are ever compiled or linted locally)
+node_modules/
+npm-debug.log
+
+# OS artefacts
+.DS_Store
+Thumbs.db
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo

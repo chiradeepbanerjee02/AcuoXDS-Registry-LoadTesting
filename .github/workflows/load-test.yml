@@ -1,0 +1,216 @@
+name: Acuo XDS Registry – Load Tests
+
+on:
+  # Run manually from the GitHub UI with configurable inputs.
+  workflow_dispatch:
+    inputs:
+      scenario:
+        description: >
+          Scenario to run. Use "all" to run every scenario sequentially.
+          Options: all | 01_login | 02_dashboard | 03_study_search |
+          04_patient_search | 05_document_registry | 06_admin_pages |
+          07_reports | 08_full_journey
+        required: true
+        default: 'all'
+      base_url:
+        description: 'Target base URL (overrides the default)'
+        required: false
+        default: 'https://app-acuoregistry.hyland.com'
+      stages_preset:
+        description: 'Load stage preset: smoke | average | stress | spike | soak'
+        required: false
+        default: 'smoke'
+      username:
+        description: 'Login username for the test account'
+        required: false
+        default: 'testuser'
+
+  # Scheduled smoke test – every weekday at 06:00 UTC.
+  schedule:
+    - cron: '0 6 * * 1-5'
+
+  # Also allow triggering from other workflows.
+  workflow_call:
+    inputs:
+      scenario:
+        type: string
+        default: 'all'
+      base_url:
+        type: string
+        default: 'https://app-acuoregistry.hyland.com'
+      stages_preset:
+        type: string
+        default: 'smoke'
+
+# Cancel any in-progress run for the same branch / input combination.
+concurrency:
+  group: load-tests-${{ github.ref }}-${{ inputs.scenario || 'all' }}
+  cancel-in-progress: true
+
+env:
+  K6_VERSION: '0.54.0'
+  BASE_URL: ${{ inputs.base_url || 'https://app-acuoregistry.hyland.com' }}
+  STAGES: ${{ inputs.stages_preset || 'smoke' }}
+
+jobs:
+  load-test:
+    name: Load Test – ${{ inputs.scenario || 'all' }}
+    # -----------------------------------------------------------------------
+    # Use a self-hosted runner so the tests run inside the local network and
+    # can reach the Acuo XDS Registry instance directly.
+    # Change the label below to match the label of your self-hosted runner.
+    # -----------------------------------------------------------------------
+    runs-on: self-hosted
+
+    steps:
+      # ── 1. Checkout ─────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Install k6 ───────────────────────────────────────────────────────
+      - name: Install k6
+        run: |
+          K6_DEB="k6-v${K6_VERSION}-linux-amd64.deb"
+          curl -fsSL \
+            "https://github.com/grafana/k6/releases/download/v${K6_VERSION}/${K6_DEB}" \
+            -o "/tmp/${K6_DEB}"
+          sudo dpkg -i "/tmp/${K6_DEB}"
+          k6 version
+
+      # ── 3. Validate scripts (dry-run) ────────────────────────────────────────
+      - name: Validate k6 scripts (syntax check)
+        run: |
+          for f in k6/scenarios/*.js; do
+            echo "Checking $f …"
+            k6 inspect "$f" 2>&1 | grep -v "^$" || true
+          done
+
+      # ── 4. Run selected scenario(s) ──────────────────────────────────────────
+      - name: Run – Login page
+        if: inputs.scenario == 'all' || inputs.scenario == '01_login'
+        env:
+          USERNAME: ${{ inputs.username || 'testuser' }}
+          PASSWORD: ${{ secrets.LOAD_TEST_PASSWORD }}
+        run: |
+          mkdir -p k6/results
+          k6 run \
+            --out json=k6/results/01_login.json \
+            -e BASE_URL="${BASE_URL}" \
+            -e USERNAME="${USERNAME}" \
+            -e PASSWORD="${PASSWORD}" \
+            -e STAGES="${STAGES}" \
+            k6/scenarios/01_login.js
+
+      - name: Run – Dashboard
+        if: inputs.scenario == 'all' || inputs.scenario == '02_dashboard'
+        env:
+          USERNAME: ${{ inputs.username || 'testuser' }}
+          PASSWORD: ${{ secrets.LOAD_TEST_PASSWORD }}
+        run: |
+          mkdir -p k6/results
+          k6 run \
+            --out json=k6/results/02_dashboard.json \
+            -e BASE_URL="${BASE_URL}" \
+            -e USERNAME="${USERNAME}" \
+            -e PASSWORD="${PASSWORD}" \
+            -e STAGES="${STAGES}" \
+            k6/scenarios/02_dashboard.js
+
+      - name: Run – Study Search
+        if: inputs.scenario == 'all' || inputs.scenario == '03_study_search'
+        env:
+          USERNAME: ${{ inputs.username || 'testuser' }}
+          PASSWORD: ${{ secrets.LOAD_TEST_PASSWORD }}
+        run: |
+          mkdir -p k6/results
+          k6 run \
+            --out json=k6/results/03_study_search.json \
+            -e BASE_URL="${BASE_URL}" \
+            -e USERNAME="${USERNAME}" \
+            -e PASSWORD="${PASSWORD}" \
+            -e STAGES="${STAGES}" \
+            k6/scenarios/03_study_search.js
+
+      - name: Run – Patient Search
+        if: inputs.scenario == 'all' || inputs.scenario == '04_patient_search'
+        env:
+          USERNAME: ${{ inputs.username || 'testuser' }}
+          PASSWORD: ${{ secrets.LOAD_TEST_PASSWORD }}
+        run: |
+          mkdir -p k6/results
+          k6 run \
+            --out json=k6/results/04_patient_search.json \
+            -e BASE_URL="${BASE_URL}" \
+            -e USERNAME="${USERNAME}" \
+            -e PASSWORD="${PASSWORD}" \
+            -e STAGES="${STAGES}" \
+            k6/scenarios/04_patient_search.js
+
+      - name: Run – Document Registry (ITI-18)
+        if: inputs.scenario == 'all' || inputs.scenario == '05_document_registry'
+        env:
+          USERNAME: ${{ inputs.username || 'testuser' }}
+          PASSWORD: ${{ secrets.LOAD_TEST_PASSWORD }}
+        run: |
+          mkdir -p k6/results
+          k6 run \
+            --out json=k6/results/05_document_registry.json \
+            -e BASE_URL="${BASE_URL}" \
+            -e USERNAME="${USERNAME}" \
+            -e PASSWORD="${PASSWORD}" \
+            -e STAGES="${STAGES}" \
+            k6/scenarios/05_document_registry.js
+
+      - name: Run – Admin Pages
+        if: inputs.scenario == 'all' || inputs.scenario == '06_admin_pages'
+        env:
+          ADMIN_USERNAME: ${{ secrets.LOAD_TEST_ADMIN_USERNAME }}
+          ADMIN_PASSWORD: ${{ secrets.LOAD_TEST_ADMIN_PASSWORD }}
+        run: |
+          mkdir -p k6/results
+          k6 run \
+            --out json=k6/results/06_admin_pages.json \
+            -e BASE_URL="${BASE_URL}" \
+            -e ADMIN_USERNAME="${ADMIN_USERNAME}" \
+            -e ADMIN_PASSWORD="${ADMIN_PASSWORD}" \
+            -e STAGES="${STAGES}" \
+            k6/scenarios/06_admin_pages.js
+
+      - name: Run – Reports & Analytics
+        if: inputs.scenario == 'all' || inputs.scenario == '07_reports'
+        env:
+          USERNAME: ${{ inputs.username || 'testuser' }}
+          PASSWORD: ${{ secrets.LOAD_TEST_PASSWORD }}
+        run: |
+          mkdir -p k6/results
+          k6 run \
+            --out json=k6/results/07_reports.json \
+            -e BASE_URL="${BASE_URL}" \
+            -e USERNAME="${USERNAME}" \
+            -e PASSWORD="${PASSWORD}" \
+            -e STAGES="${STAGES}" \
+            k6/scenarios/07_reports.js
+
+      - name: Run – Full User Journey
+        if: inputs.scenario == 'all' || inputs.scenario == '08_full_journey'
+        env:
+          USERNAME: ${{ inputs.username || 'testuser' }}
+          PASSWORD: ${{ secrets.LOAD_TEST_PASSWORD }}
+        run: |
+          mkdir -p k6/results
+          k6 run \
+            --out json=k6/results/08_full_journey.json \
+            -e BASE_URL="${BASE_URL}" \
+            -e USERNAME="${USERNAME}" \
+            -e PASSWORD="${PASSWORD}" \
+            -e STAGES="${STAGES}" \
+            k6/scenarios/08_full_journey.js
+
+      # ── 5. Upload result artifacts ────────────────────────────────────────────
+      - name: Upload k6 results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-results-${{ github.run_id }}
+          path: k6/results/
+          retention-days: 30
