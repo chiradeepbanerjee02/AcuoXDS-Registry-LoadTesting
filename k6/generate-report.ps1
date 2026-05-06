@@ -7,7 +7,7 @@
 .DESCRIPTION
     Reads every *_summary.json file produced by k6 --summary-export that is
     found under the results directory, extracts the key performance metrics and
-    threshold results, and writes a self-contained Reports.html file styled to
+    threshold results, and writes a self-contained load-test-report.html file styled to
     match the Hyland Acuo test-report conventions used across the Acuo toolchain.
 
 .PARAMETER ResultsDir
