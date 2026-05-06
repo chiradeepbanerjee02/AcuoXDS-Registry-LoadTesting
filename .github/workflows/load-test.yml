@@ -105,6 +105,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path "k6/results" | Out-Null
           k6 run `
             --out "json=k6/results/01_login.json" `
+            --summary-export "k6/results/01_login_summary.json" `
             -e "BASE_URL=$env:BASE_URL" `
             -e "USERNAME=$env:USERNAME" `
             -e "PASSWORD=$env:PASSWORD" `
@@ -121,6 +122,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path "k6/results" | Out-Null
           k6 run `
             --out "json=k6/results/02_dashboard.json" `
+            --summary-export "k6/results/02_dashboard_summary.json" `
             -e "BASE_URL=$env:BASE_URL" `
             -e "USERNAME=$env:USERNAME" `
             -e "PASSWORD=$env:PASSWORD" `
@@ -137,6 +139,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path "k6/results" | Out-Null
           k6 run `
             --out "json=k6/results/03_study_search.json" `
+            --summary-export "k6/results/03_study_search_summary.json" `
             -e "BASE_URL=$env:BASE_URL" `
             -e "USERNAME=$env:USERNAME" `
             -e "PASSWORD=$env:PASSWORD" `
@@ -153,6 +156,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path "k6/results" | Out-Null
           k6 run `
             --out "json=k6/results/04_patient_search.json" `
+            --summary-export "k6/results/04_patient_search_summary.json" `
             -e "BASE_URL=$env:BASE_URL" `
             -e "USERNAME=$env:USERNAME" `
             -e "PASSWORD=$env:PASSWORD" `
@@ -169,6 +173,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path "k6/results" | Out-Null
           k6 run `
             --out "json=k6/results/05_document_registry.json" `
+            --summary-export "k6/results/05_document_registry_summary.json" `
             -e "BASE_URL=$env:BASE_URL" `
             -e "USERNAME=$env:USERNAME" `
             -e "PASSWORD=$env:PASSWORD" `
@@ -185,6 +190,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path "k6/results" | Out-Null
           k6 run `
             --out "json=k6/results/06_admin_pages.json" `
+            --summary-export "k6/results/06_admin_pages_summary.json" `
             -e "BASE_URL=$env:BASE_URL" `
             -e "ADMIN_USERNAME=$env:ADMIN_USERNAME" `
             -e "ADMIN_PASSWORD=$env:ADMIN_PASSWORD" `
@@ -201,6 +207,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path "k6/results" | Out-Null
           k6 run `
             --out "json=k6/results/07_reports.json" `
+            --summary-export "k6/results/07_reports_summary.json" `
             -e "BASE_URL=$env:BASE_URL" `
             -e "USERNAME=$env:USERNAME" `
             -e "PASSWORD=$env:PASSWORD" `
@@ -217,14 +224,26 @@ jobs:
           New-Item -ItemType Directory -Force -Path "k6/results" | Out-Null
           k6 run `
             --out "json=k6/results/08_full_journey.json" `
+            --summary-export "k6/results/08_full_journey_summary.json" `
             -e "BASE_URL=$env:BASE_URL" `
             -e "USERNAME=$env:USERNAME" `
             -e "PASSWORD=$env:PASSWORD" `
             -e "STAGES=$env:STAGES" `
             "k6/scenarios/08_full_journey.js"
 
-      # ── 5. Upload result artifacts ────────────────────────────────────────────
-      - name: Upload k6 results
+      # ── 5. Generate HTML report ───────────────────────────────────────────────
+      - name: Generate HTML report
+        if: always()
+        shell: pwsh
+        run: |
+          ./k6/generate-report.ps1 `
+            -ResultsDir  "k6/results" `
+            -OutputPath  "k6/results/load-test-report.html" `
+            -BaseUrl     "$env:BASE_URL" `
+            -StagesPreset "$env:STAGES"
+
+      # ── 6. Upload result artifacts ────────────────────────────────────────────
+      - name: Upload k6 results and HTML report
         if: always()
         uses: actions/upload-artifact@v4
         with:
