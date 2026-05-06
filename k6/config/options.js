@@ -8,8 +8,8 @@
 export const BASE_URL = __ENV.BASE_URL || 'https://app-acuoregistry.hyland.com';
 
 export const CREDENTIALS = {
-  username: __ENV.USERNAME || 'testuser',
-  password: __ENV.PASSWORD || 'testpassword',
+  username: __ENV.USERNAME || 'AcuoServiceUser',
+  password: __ENV.PASSWORD || '$ecureDefault2017',
 };
 
 // ─── Stage presets ────────────────────────────────────────────────────────────
