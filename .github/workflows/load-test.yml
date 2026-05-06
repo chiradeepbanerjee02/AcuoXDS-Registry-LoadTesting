@@ -69,16 +69,24 @@ jobs:
 
       # ── 2. Install k6 ───────────────────────────────────────────────────────
       - name: Install k6
+        shell: pwsh
         run: |
-          K6_DEB="k6-v${K6_VERSION}-linux-amd64.deb"
-          curl -fsSL \
-            "https://github.com/grafana/k6/releases/download/v${K6_VERSION}/${K6_DEB}" \
-            -o "/tmp/${K6_DEB}"
-          sudo dpkg -i "/tmp/${K6_DEB}"
-          k6 version
+          $k6Zip = "k6-v$($env:K6_VERSION)-windows-amd64.zip"
+          $k6Url = "https://github.com/grafana/k6/releases/download/v$($env:K6_VERSION)/$k6Zip"
+          $tmpDir = Join-Path $env:TEMP "k6-install"
+          New-Item -ItemType Directory -Force -Path $tmpDir | Out-Null
+          Invoke-WebRequest -Uri $k6Url -OutFile (Join-Path $tmpDir $k6Zip)
+          Expand-Archive -Path (Join-Path $tmpDir $k6Zip) -DestinationPath $tmpDir -Force
+          $k6Dir = Join-Path $tmpDir "k6-v$($env:K6_VERSION)-windows-amd64"
+          Add-Content -Path $env:GITHUB_PATH -Value $k6Dir
+
+      - name: Verify k6 installation
+        shell: bash
+        run: k6 version
 
       # ── 3. Validate scripts (dry-run) ────────────────────────────────────────
       - name: Validate k6 scripts (syntax check)
+        shell: bash
         run: |
           for f in k6/scenarios/*.js; do
             echo "Checking $f …"
@@ -91,6 +99,7 @@ jobs:
         env:
           USERNAME: ${{ inputs.username || 'testuser' }}
           PASSWORD: ${{ secrets.LOAD_TEST_PASSWORD }}
+        shell: bash
         run: |
           mkdir -p k6/results
           k6 run \
@@ -106,6 +115,7 @@ jobs:
         env:
           USERNAME: ${{ inputs.username || 'testuser' }}
           PASSWORD: ${{ secrets.LOAD_TEST_PASSWORD }}
+        shell: bash
         run: |
           mkdir -p k6/results
           k6 run \
@@ -121,6 +131,7 @@ jobs:
         env:
           USERNAME: ${{ inputs.username || 'testuser' }}
           PASSWORD: ${{ secrets.LOAD_TEST_PASSWORD }}
+        shell: bash
         run: |
           mkdir -p k6/results
           k6 run \
@@ -136,6 +147,7 @@ jobs:
         env:
           USERNAME: ${{ inputs.username || 'testuser' }}
           PASSWORD: ${{ secrets.LOAD_TEST_PASSWORD }}
+        shell: bash
         run: |
           mkdir -p k6/results
           k6 run \
@@ -151,6 +163,7 @@ jobs:
         env:
           USERNAME: ${{ inputs.username || 'testuser' }}
           PASSWORD: ${{ secrets.LOAD_TEST_PASSWORD }}
+        shell: bash
         run: |
           mkdir -p k6/results
           k6 run \
@@ -166,6 +179,7 @@ jobs:
         env:
           ADMIN_USERNAME: ${{ secrets.LOAD_TEST_ADMIN_USERNAME }}
           ADMIN_PASSWORD: ${{ secrets.LOAD_TEST_ADMIN_PASSWORD }}
+        shell: bash
         run: |
           mkdir -p k6/results
           k6 run \
@@ -181,6 +195,7 @@ jobs:
         env:
           USERNAME: ${{ inputs.username || 'testuser' }}
           PASSWORD: ${{ secrets.LOAD_TEST_PASSWORD }}
+        shell: bash
         run: |
           mkdir -p k6/results
           k6 run \
@@ -196,6 +211,7 @@ jobs:
         env:
           USERNAME: ${{ inputs.username || 'testuser' }}
           PASSWORD: ${{ secrets.LOAD_TEST_PASSWORD }}
+        shell: bash
         run: |
           mkdir -p k6/results
           k6 run \
