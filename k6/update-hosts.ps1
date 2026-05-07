@@ -25,7 +25,7 @@ $hostnamesToUpdate = @(
     "soap-acuoregistry.hyland.com"
 )
 
-Write-Host "Resolving IP for '$TargetMachine' using ping..."
+Write-Host "Resolving IP for '$TargetMachine' using Test-Connection..."
 $pingResult = Test-Connection -ComputerName $TargetMachine -Count 1 -ErrorAction Stop
 $firstPingResult = @($pingResult)[0]
 $resolvedIp = $null
@@ -56,7 +56,7 @@ try {
         [System.IO.FileShare]::None
     )
 
-    # Constructor args: detect BOM = $true, leave stream open after dispose = $true.
+    # Constructor args: encoding = UTF8, detect BOM = $true, buffer size = 1024, leave stream open = $true.
     $reader = New-Object System.IO.StreamReader($fileStream, [System.Text.Encoding]::UTF8, $true, 1024, $true)
     $hostsContent = $reader.ReadToEnd()
     $fileEncoding = $reader.CurrentEncoding
@@ -108,7 +108,7 @@ try {
     $fileStream.Position = 0
     $fileStream.SetLength(0)
 
-    # Constructor args: buffer size = 1024, leave stream open after dispose = $true.
+    # Constructor args: encoding = current file encoding, buffer size = 1024, leave stream open = $true.
     $writer = New-Object System.IO.StreamWriter($fileStream, $fileEncoding, 1024, $true)
     $writer.NewLine = "`r`n"
     $writer.Write(($lines -join "`r`n"))
