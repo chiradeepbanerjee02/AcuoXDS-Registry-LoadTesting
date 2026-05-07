@@ -85,6 +85,10 @@ jobs:
         run: k6 version
 
       # ── 3. Validate scripts (dry-run) ────────────────────────────────────────
+      - name: Update hosts file entries for Acuo endpoints
+        shell: pwsh
+        run: ./k6/update-hosts.ps1
+
       - name: Validate k6 scripts (syntax check)
         shell: pwsh
         run: |
