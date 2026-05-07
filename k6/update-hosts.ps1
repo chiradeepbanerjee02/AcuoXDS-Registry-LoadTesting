@@ -46,6 +46,7 @@ Write-Host "Updating hosts file: $HostsPath"
 $fileStream = $null
 $reader = $null
 $writer = $null
+$fileEncoding = [System.Text.Encoding]::UTF8
 
 try {
     $fileStream = [System.IO.File]::Open(
@@ -56,8 +57,9 @@ try {
     )
 
     # Constructor args: detect BOM = $true, leave stream open after dispose = $true.
-    $reader = New-Object System.IO.StreamReader($fileStream, [System.Text.Encoding]::ASCII, $true, 1024, $true)
+    $reader = New-Object System.IO.StreamReader($fileStream, [System.Text.Encoding]::UTF8, $true, 1024, $true)
     $hostsContent = $reader.ReadToEnd()
+    $fileEncoding = $reader.CurrentEncoding
     $reader.Dispose()
     $reader = $null
 
@@ -93,19 +95,21 @@ try {
         throw "Did not find required host entries in hosts file: $($missingHostnames -join ', ')"
     }
 
-    while ($lines.Count -gt 0 -and [string]::IsNullOrWhiteSpace($lines[$lines.Count - 1])) {
-        if ($lines.Count -eq 1) {
-            $lines = @()
-        } else {
-            $lines = $lines[0..($lines.Count - 2)]
-        }
+    $lastIndex = $lines.Count - 1
+    while ($lastIndex -ge 0 -and [string]::IsNullOrWhiteSpace($lines[$lastIndex])) {
+        $lastIndex--
+    }
+    if ($lastIndex -ge 0) {
+        $lines = $lines[0..$lastIndex]
+    } else {
+        $lines = @()
     }
 
     $fileStream.Position = 0
     $fileStream.SetLength(0)
 
     # Constructor args: buffer size = 1024, leave stream open after dispose = $true.
-    $writer = New-Object System.IO.StreamWriter($fileStream, [System.Text.Encoding]::ASCII, 1024, $true)
+    $writer = New-Object System.IO.StreamWriter($fileStream, $fileEncoding, 1024, $true)
     $writer.NewLine = "`r`n"
     $writer.Write(($lines -join "`r`n"))
     $writer.Write("`r`n")
