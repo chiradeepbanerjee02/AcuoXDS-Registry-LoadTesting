@@ -94,6 +94,15 @@ jobs:
             $global:LASTEXITCODE = 0
           }
 
+      - name: Prepare fresh results directory
+        if: always()
+        shell: pwsh
+        run: |
+          if (Test-Path "k6/results") {
+            Remove-Item -Path "k6/results" -Recurse -Force -ErrorAction SilentlyContinue
+          }
+          New-Item -ItemType Directory -Force -Path "k6/results" | Out-Null
+
       # ── 4. Run selected scenario(s) ──────────────────────────────────────────
       - name: Run – Login page
         if: always() && (inputs.scenario == 'all' || inputs.scenario == '01_login')
