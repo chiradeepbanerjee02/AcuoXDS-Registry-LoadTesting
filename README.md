@@ -136,6 +136,8 @@ All scenarios read the following environment variables:
 
 The workflow (`.github/workflows/load-test.yml`) runs on a **self-hosted runner** so it has direct network access to the registry.
 
+> **Important:** The runner account must have elevated (Administrator) permissions because the workflow updates `C:\Windows\System32\drivers\etc\hosts` before running load tests.
+
 ### Required secrets
 
 Add these in **Settings → Secrets and variables → Actions**:

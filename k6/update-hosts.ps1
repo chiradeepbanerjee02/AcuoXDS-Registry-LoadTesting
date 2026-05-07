@@ -45,7 +45,7 @@ try {
         $HostsPath,
         [System.IO.FileMode]::Open,
         [System.IO.FileAccess]::ReadWrite,
-        [System.IO.FileShare]::Read
+        [System.IO.FileShare]::None
     )
 
     $reader = New-Object System.IO.StreamReader($fileStream, [System.Text.Encoding]::ASCII, $true, 1024, $true)
@@ -85,13 +85,21 @@ try {
         throw "Did not find required host entries in hosts file: $($missingHostnames -join ', ')"
     }
 
+    while ($lines.Count -gt 0 -and [string]::IsNullOrWhiteSpace($lines[$lines.Count - 1])) {
+        if ($lines.Count -eq 1) {
+            $lines = @()
+        } else {
+            $lines = $lines[0..($lines.Count - 2)]
+        }
+    }
+
     $fileStream.Position = 0
     $fileStream.SetLength(0)
 
     $writer = New-Object System.IO.StreamWriter($fileStream, [System.Text.Encoding]::ASCII, 1024, $true)
     $writer.NewLine = "`r`n"
     $writer.Write(($lines -join "`r`n"))
-    $writer.WriteLine()
+    $writer.Write("`r`n")
     $writer.Flush()
 
     Write-Host "Hosts file update completed."
