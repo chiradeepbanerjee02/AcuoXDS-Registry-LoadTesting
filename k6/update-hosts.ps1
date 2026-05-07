@@ -27,7 +27,14 @@ $hostnamesToUpdate = @(
 
 Write-Host "Resolving IP for '$TargetMachine' using ping..."
 $pingResult = Test-Connection -ComputerName $TargetMachine -Count 1 -ErrorAction Stop
-$resolvedIp = (@($pingResult)[0]).IPV4Address.IPAddressToString
+$firstPingResult = @($pingResult)[0]
+$resolvedIp = $null
+
+if (($firstPingResult.PSObject.Properties.Name -contains "IPV4Address") -and $firstPingResult.IPV4Address) {
+    $resolvedIp = $firstPingResult.IPV4Address.IPAddressToString
+} elseif (($firstPingResult.PSObject.Properties.Name -contains "Address") -and $firstPingResult.Address) {
+    $resolvedIp = [string]$firstPingResult.Address
+}
 
 if (-not $resolvedIp) {
     throw "Could not resolve an IPv4 address for '$TargetMachine'."
@@ -48,6 +55,7 @@ try {
         [System.IO.FileShare]::None
     )
 
+    # Constructor args: detect BOM = $true, leave stream open after dispose = $true.
     $reader = New-Object System.IO.StreamReader($fileStream, [System.Text.Encoding]::ASCII, $true, 1024, $true)
     $hostsContent = $reader.ReadToEnd()
     $reader.Dispose()
@@ -96,6 +104,7 @@ try {
     $fileStream.Position = 0
     $fileStream.SetLength(0)
 
+    # Constructor args: buffer size = 1024, leave stream open after dispose = $true.
     $writer = New-Object System.IO.StreamWriter($fileStream, [System.Text.Encoding]::ASCII, 1024, $true)
     $writer.NewLine = "`r`n"
     $writer.Write(($lines -join "`r`n"))
