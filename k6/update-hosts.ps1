@@ -12,6 +12,13 @@ param(
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
+$currentIdentity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
+$currentPrincipal = New-Object System.Security.Principal.WindowsPrincipal($currentIdentity)
+$isElevated = $currentPrincipal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
+if (-not $isElevated) {
+    throw "This script must run with administrator privileges to update '$HostsPath'."
+}
+
 $hostnamesToUpdate = @(
     "app-acuoregistry.hyland.com",
     "api-acuoregistry.hyland.com",
@@ -20,7 +27,7 @@ $hostnamesToUpdate = @(
 
 Write-Host "Resolving IP for '$TargetMachine' using ping..."
 $pingResult = Test-Connection -ComputerName $TargetMachine -Count 1 -ErrorAction Stop
-$resolvedIp = $pingResult[0].IPV4Address.IPAddressToString
+$resolvedIp = (@($pingResult)[0]).IPV4Address.IPAddressToString
 
 if (-not $resolvedIp) {
     throw "Could not resolve an IPv4 address for '$TargetMachine'."
@@ -46,7 +53,7 @@ try {
     $reader.Dispose()
     $reader = $null
 
-    $lines = $hostsContent -split "(`r`n|`n|`r)"
+    $lines = $hostsContent -split "`r?`n"
     $updatedHostnames = @{}
     foreach ($hostname in $hostnamesToUpdate) {
         $updatedHostnames[$hostname] = $false
@@ -84,6 +91,7 @@ try {
     $writer = New-Object System.IO.StreamWriter($fileStream, [System.Text.Encoding]::ASCII, 1024, $true)
     $writer.NewLine = "`r`n"
     $writer.Write(($lines -join "`r`n"))
+    $writer.WriteLine()
     $writer.Flush()
 
     Write-Host "Hosts file update completed."
